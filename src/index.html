@@ -9,7 +9,17 @@
   </head>
   <body>
     <video id="player" autoplay playsinline controls="false"></video>
-    <button class="start-button" onclick="openDefaultStream()">start</button>
+    <div class="row">
+      <button class="button" onclick="openDefaultStream()">start</button>
+      <button class="button" onclick="toggleAudio()">toggleAudio</button>
+      <button class="button" onclick="toggleVideo()">toggleVideo</button>
+    </div>
+
+    <div>
+      <span>tracks:</span>
+      <ol id="tracks"></ol>
+    </div>
+
     <ol id="devices"></ol>
   </body>
 </html>
