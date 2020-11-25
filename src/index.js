@@ -1,4 +1,6 @@
 let _stream;
+let video = window.video = document.querySelector('video');
+let canvas = window.canvas = document.querySelector('canvas');
 
 function openDefaultStream() {
   console.log('open default stream');
@@ -82,6 +84,14 @@ function toggleVideo() {
     track.enabled = !track.enabled;
   });
   updateTracks(_stream);
+}
+
+let timeInterval;
+function snapshot() {
+  clearInterval(timeInterval);
+  timeInterval = setInterval(() => {
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  }, 1000/60);
 }
 
 navigator.mediaDevices.addEventListener('devicechange', async () => {
