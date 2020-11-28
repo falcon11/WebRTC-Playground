@@ -1,0 +1,20 @@
+{
+  "name": "WebRTC-Playground",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/falcon11/WebRTC-Playground.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/falcon11/WebRTC-Playground/issues"
+  },
+  "homepage": "https://github.com/falcon11/WebRTC-Playground#readme"
+}
