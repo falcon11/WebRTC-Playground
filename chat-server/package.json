@@ -11,5 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "websocket": "^1.0.32"
+  },
+  "devDependencies": {
+    "@types/websocket": "^1.0.1"
   }
 }
