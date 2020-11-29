@@ -151,7 +151,7 @@ function handleReceiveWebrtcOffer(callerConnection, data) {
 
 function handleReceiveWebrtcAnswer(receiverConnection, data) {
     const { caller, answer, } = data;
-    const connections = userConnections[caller];
+    const connections = userConnections[caller] || [];
     if (connections.length === 0) {
         return;
     }
@@ -170,7 +170,7 @@ function handleReceiveWebrtcAnswer(receiverConnection, data) {
 
 function handleReceiveWebrtcIceCandidate(srcConnection, data) {
     const { remoteUser, candidate } = data;
-    const connections = userConnections[remoteUser];
+    const connections = userConnections[remoteUser] || [];
     if (connections.length === 0) return;
     const msgObj = {
         type: MessageTypes.webrtcIcecandidate,
@@ -217,6 +217,7 @@ wsServer.on('request', function (request) {
             const msg = JSON.parse(msgString);
             handleReceiveMsg(connection, msg);
         } catch (error) {
+            console.log('error happen', error);
             sendError(connection, 'invalid message');
         }
     }

@@ -8,14 +8,13 @@ const configuration = {
     ],
 };
 
+const constraints: MediaStreamConstraints = {
+    video: true,
+    audio: true,
+};
+
 function getUserMedia(constraints: MediaStreamConstraints): Promise<MediaStream> {
-    return new Promise((resolve, reject) => {
-        navigator.getUserMedia(constraints, (stream) => {
-            resolve(stream);
-        }, (error) => {
-            reject(error);
-        });
-    });
+    return navigator.mediaDevices.getUserMedia(constraints);
 }
 
 class WebrtcController {
@@ -56,7 +55,7 @@ class WebrtcController {
     }
 
     makeCall = async () => {
-        this.localMediaStream = await getUserMedia({ video: true, audio: false });
+        this.localMediaStream = await getUserMedia(constraints);
         this.localMediaStream.getTracks().forEach(track => {
             this.peerConnection.addTrack(track, this.localMediaStream!);
         });
@@ -67,7 +66,7 @@ class WebrtcController {
 
     handleReceiveOffer = async (offer: any) => {
         console.log('receive offer', offer);
-        this.localMediaStream = await getUserMedia({ video: true, audio: true });
+        this.localMediaStream = await getUserMedia(constraints);
         this.localMediaStream.getTracks().forEach(track => {
             this.peerConnection.addTrack(track, this.localMediaStream!);
         });
