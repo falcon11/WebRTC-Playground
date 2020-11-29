@@ -1,7 +1,7 @@
 import WebSocket, { w3cwebsocket } from 'websocket';
 import WebrtcController from './webrtc-controller';
 
-const wsURL = 'ws://localhost:8080/';
+const wsURL = 'wss://localhost:8081/';
 const wsProtocol = 'chat';
 
 const wsClient = new w3cwebsocket(wsURL, wsProtocol);
@@ -100,7 +100,10 @@ export default class ChatClient {
     }
 
     _onIceCandidate = (candidate: RTCIceCandidate) => {
-        if (!this.remoteUser) return;
+        if (!this.remoteUser) {
+            console.log('no remote user');
+            return;
+        };
         this.sendMessage({
             type: 'webrtc.icecandidate',
             data: {
@@ -134,8 +137,8 @@ export default class ChatClient {
     }
 
     call = async (receiver: string) => {
-        const offer = await this.webrtcController.makeCall();
         this.remoteUser = receiver;
+        const offer = await this.webrtcController.makeCall();
         this.sendMessage({
             type: 'webrtc.offer',
             data: {

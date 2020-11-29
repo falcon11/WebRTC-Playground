@@ -24,6 +24,7 @@ class WebrtcController {
     localMediaStream: MediaStream | undefined;
     remoteMediaStream: MediaStream;
     onIceCandidate?: (candidate: RTCIceCandidate) => void;
+    candidateArray: any[] = [];
 
     constructor() {
         this.localMediaStream = undefined;
@@ -32,6 +33,7 @@ class WebrtcController {
         this.peerConnection.ontrack = this._onTrack;
         this.peerConnection.onconnectionstatechange = this._onConnectionStateChange;
         this.peerConnection.onicecandidate = this._onIceCandidate;
+        this.peerConnection.onicegatheringstatechange = this._onIceGatheringStateChange;
     }
 
     _onTrack = (ev: RTCTrackEvent) => {
@@ -40,6 +42,10 @@ class WebrtcController {
 
     _onConnectionStateChange = () => {
         console.log('current webrtc connection state:', this.peerConnection.connectionState);
+    }
+
+    _onIceGatheringStateChange = (ev: any) => {
+        console.log('on ice gathering state change', ev);
     }
 
     _onIceCandidate = (ev: RTCPeerConnectionIceEvent) => {
@@ -61,7 +67,7 @@ class WebrtcController {
 
     handleReceiveOffer = async (offer: any) => {
         console.log('receive offer', offer);
-        this.localMediaStream = await getUserMedia({ video: true, audio: false });
+        this.localMediaStream = await getUserMedia({ video: true, audio: true });
         this.localMediaStream.getTracks().forEach(track => {
             this.peerConnection.addTrack(track, this.localMediaStream!);
         });
@@ -74,14 +80,30 @@ class WebrtcController {
     handleReceiveAnswer = async (answer: any) => {
         console.log('receive answer', answer);
         await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        if (this.candidateArray.length > 0) {
+            console.log('receive answer and add candidate');
+            for (let i = 0; i < this.candidateArray.length; i += 1) {
+                const candidate = this.candidateArray[i];
+                try {
+                    await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                } catch (error) {
+                    console.error('add ice candidate error', error);
+                }
+            }
+            this.candidateArray = [];
+        }
     }
 
     handleReceiveCandidate = async (candidate: any) => {
         console.log('receive candidate', candidate);
+        if (!this.peerConnection.remoteDescription) {
+            this.candidateArray.push(candidate);
+            return;
+        }
         try {
             await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
         } catch (error) {
-
+            console.error('add ice candidate error', error);
         }
 
     }
