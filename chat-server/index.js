@@ -2,6 +2,8 @@
 var WebSocket = require('websocket');
 var WebSocketServer = WebSocket.server;
 var http = require('http');
+var https = require('https')
+var fs = require('fs')
 
 const MessageTypes = require('./messageType');
 
@@ -14,8 +16,20 @@ server.listen(8080, function () {
     console.log((new Date()) + ' Server is listening on port 8080');
 });
 
+var httpsServer = https.createServer({
+    cert: fs.readFileSync('./cert.pem'),
+    key: fs.readFileSync('./privkey.pem'),
+}, function (request, response) {
+    console.log((new Date()) + ' Received request for ' + request.url);
+    response.writeHead(404);
+    response.end();
+})
+httpsServer.listen(8081, function () {
+    console.log((new Date()) + ' Server is listening on port 8081');
+})
+
 const wsServer = new WebSocketServer({
-    httpServer: server,
+    httpServer: [server, httpsServer],
     // You should not use autoAcceptConnections for production
     // applications, as it defeats all standard cross-origin protection
     // facilities built into the protocol and the browser.  You should
