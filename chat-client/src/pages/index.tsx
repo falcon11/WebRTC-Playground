@@ -1,21 +1,44 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styles from './index.less';
-import { addMessageListener, removeMessageListener, sendMessage } from '@/services/chat-client';
+import ChatClient from '@/services/chat-client';
 
 export default () => {
   const [username, setUsername] = useState('');
-  const onMessage = (data: any) => {
+  const [remoteUser, setRemoteUser] = useState('');
+  const [chatClient, setChatClient] = useState<ChatClient>();
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const onMessage = ({ type, data }: { type: string; data: any }) => {
     console.log('receive data', data);
   }
   useEffect(() => {
-    addMessageListener(onMessage);
-    return () => {
-      removeMessageListener(onMessage);
-    };
+    const client = new ChatClient();
+    setChatClient(client);
   }, []);
+  useEffect(() => {
+    if (!chatClient) return;
+    chatClient.addMessageListener(onMessage);
+    chatClient.onReceiveCall = async (caller, accept) => {
+      const isAccepted = confirm('' + caller + ' calling, accept?');
+      if (isAccepted && accept) {
+        await accept();
+        localVideoRef.current && (localVideoRef.current.srcObject = chatClient?.webrtcController.localMediaStream || null);
+        remoteVideoRef.current && (remoteVideoRef.current.srcObject = chatClient?.webrtcController.remoteMediaStream || null);
+      }
+    };
+    return () => {
+      chatClient.removeMessageListener(onMessage);
+    };
+  }, [chatClient])
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    sendMessage({ type: 'login', data: { username, } })
+    chatClient?.sendMessage({ type: 'login', data: { username, } })
+  }
+  const handleCall = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await chatClient?.call(remoteUser);
+    localVideoRef.current && (localVideoRef.current!.srcObject = chatClient?.webrtcController.localMediaStream || null);
+    remoteVideoRef.current && (remoteVideoRef.current.srcObject = chatClient?.webrtcController.remoteMediaStream || null);
   }
   return (
     <div>
@@ -27,6 +50,17 @@ export default () => {
         </label>
         <input type='submit' value="Login" />
       </form>
+      <form onSubmit={handleCall}>
+        <label>
+          Remote:
+          <input type="text" name="remoteUser" onChange={e => setRemoteUser(e.target.value)} />
+        </label>
+        <input type="submit" value="Call" />
+      </form>
+      <div>
+        <video ref={localVideoRef} className={styles.player} autoPlay playsInline></video>
+        <video ref={remoteVideoRef} className={styles.player} autoPlay playsInline></video>
+      </div>
     </div>
   );
 }

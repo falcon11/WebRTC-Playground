@@ -32,6 +32,11 @@ function originIsAllowed(origin) {
     return true;
 }
 
+/**
+ * send message
+ * @param {WebSocket.connection} connection 
+ * @param {*} param1 
+ */
 function sendMessage(connection, { type, data }) {
     const message = {
         type,
@@ -76,10 +81,13 @@ function handleReceiveMsg(connection, msg = {}) {
             handleLogin(connection, data);
             break;
         case MessageTypes.webrtcOffer:
+            handleReceiveWebrtcOffer(connection, data);
             break;
         case MessageTypes.webrtcAnswer:
+            handleReceiveWebrtcAnswer(connection, data);
             break;
         case MessageTypes.webrtcIcecandidate:
+            handleReceiveWebrtcIceCandidate(connection, data);
             break;
         default:
             break;
@@ -106,6 +114,61 @@ function handleLogin(connection, data) {
     }
     userConnections[username] = connections;
     sendSuccess(connection, 'login success', MessageTypes.login);
+}
+
+function handleReceiveWebrtcOffer(callerConnection, data) {
+    const { receiver, offer } = data;
+    const connections = userConnections[receiver] || [];
+    if (connections.length === 0) {
+        return;
+    }
+    const msgObj = {
+        type: MessageTypes.webrtcOffer,
+        data: {
+            caller: callerConnection.username,
+            offer,
+        }
+    }
+    const msg = JSON.stringify(msgObj);
+    connections.forEach(connection => {
+        connection.sendUTF(msg);
+    });
+}
+
+function handleReceiveWebrtcAnswer(receiverConnection, data) {
+    const { caller, answer, } = data;
+    const connections = userConnections[caller];
+    if (connections.length === 0) {
+        return;
+    }
+    const msgObj = {
+        type: MessageTypes.webrtcAnswer,
+        data: {
+            receiver: receiverConnection.username,
+            answer,
+        }
+    };
+    const msg = JSON.stringify(msgObj);
+    connections.forEach(connection => {
+        connection.sendUTF(msg);
+    });
+}
+
+function handleReceiveWebrtcIceCandidate(srcConnection, data) {
+    const { remoteUser, candidate } = data;
+    const connections = userConnections[remoteUser];
+    if (connections.length === 0) return;
+    const msgObj = {
+        type: MessageTypes.webrtcIcecandidate,
+        data: {
+            sender: srcConnection.username,
+            candidate,
+        },
+    };
+    const msg = JSON.stringify(msgObj);
+    connections.forEach(connection => {
+        connection.sendUTF(msg);
+    });
 }
 
 function handleConnectionClose(connection) {

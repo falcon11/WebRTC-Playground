@@ -1,64 +1,147 @@
-import WebSocket from 'websocket';
+import WebSocket, { w3cwebsocket } from 'websocket';
+import WebrtcController from './webrtc-controller';
 
 const wsURL = 'ws://localhost:8080/';
 const wsProtocol = 'chat';
 
-const W3CWebSocket = WebSocket.w3cwebsocket;
-const messageListener: any[] = [];
+const wsClient = new w3cwebsocket(wsURL, wsProtocol);
+
+export default class ChatClient {
+    wsClient!: w3cwebsocket;
+    webrtcController!: WebrtcController;
+    messageListener: any[] = [];
+    onReceiveCall?: (username: string, accept: () => Promise<any>) => void;
+    remoteUser?: string;
 
 
-const client = new W3CWebSocket(wsURL, wsProtocol);
+    constructor() {
+        this._initWSClient();
+        this._initWebrtcController();
+    }
 
-client.onerror = function () {
-    console.log('Connection Error');
-};
+    _initWSClient = () => {
+        this.wsClient = wsClient;
+        this.wsClient.onopen = this._onWsClientOpen;
+        this.wsClient.onclose = this._onWsClientClose;
+        this.wsClient.onmessage = this._onWsClientMessage;
+        this.wsClient.onerror = this._onWsClientError;
+    }
 
-client.onopen = function () {
-    console.log('WebSocket Client Connected');
+    _initWebrtcController = () => {
+        this.webrtcController = new WebrtcController();
+        this.webrtcController.onIceCandidate = this._onIceCandidate;
+    }
 
-    function sendNumber() {
-        if (client.readyState === client.OPEN) {
-            var number = Math.round(Math.random() * 0xFFFFFF);
-            client.send(number.toString());
-            // setTimeout(sendNumber, 1000);
+    _onWsClientOpen = () => {
+        console.log('WebSocket Client Connected');
+    }
+
+    _onWsClientClose = () => {
+        console.log('WebSocket Client closed');
+    }
+
+    _onWsClientMessage = (message: WebSocket.IMessageEvent) => {
+        const data = message.data;
+        try {
+            const msgObj = JSON.parse(data as string);
+            this._handleOnMessage(msgObj);
+            this.messageListener.forEach(listener => {
+                listener(msgObj);
+            });
+        } catch (error) {
+            console.log('invalid data');
         }
     }
-    sendNumber();
-};
 
-client.onclose = function () {
-    console.log('echo-protocol Client Closed');
-};
-
-client.onmessage = function (e) {
-    if (typeof e.data === 'string') {
-        console.log("Received: '" + e.data + "'");
+    _acceptWebrtcOffer = async (data: { caller: string; offer: any }) => {
+        this.remoteUser = data.caller;
+        const answer = await this.webrtcController.handleReceiveOffer(data.offer);
+        this.sendMessage({
+            type: 'webrtc.answer',
+            data: {
+                caller: data.caller,
+                answer,
+            }
+        });
     }
-    messageListener.forEach(listener => {
-        listener(e.data);
-    });
-};
 
-export function sendMessage({ type = '', data }: { type: string; data: any }) {
-    console.log('client ready state', client.readyState);
-    const message = {
-        type,
-        data,
-    };
-    if (client.readyState === client.OPEN) {
-        client.send(JSON.stringify(message));
+    _handleReceiveWebrtcOffer = async (data: { caller: string; offer: any }) => {
+        this.onReceiveCall && this.onReceiveCall(data.caller, () => {
+            return this._acceptWebrtcOffer(data);
+        });
+    }
+
+    _handleReceiveWebrtcAnswer = async (data: { receiver: string; answer: any }) => {
+        await this.webrtcController.handleReceiveAnswer(data.answer);
+    }
+
+    _handleReceiveWebrtcIceCandidate = async (data: { sender: string; candidate: any }) => {
+        await this.webrtcController.handleReceiveCandidate(data.candidate);
+    }
+
+    _handleOnMessage = ({ type = '', data }: { type: string; data: any }) => {
+        switch (type) {
+            case 'webrtc.offer':
+                this._handleReceiveWebrtcOffer(data);
+                break;
+            case 'webrtc.answer':
+                this._handleReceiveWebrtcAnswer(data);
+                break;
+            case 'webrtc.icecandidate':
+                this._handleReceiveWebrtcIceCandidate(data)
+                break;
+            default:
+                break;
+        }
+    }
+
+    _onWsClientError = (error: Error) => {
+        console.log('websocket client error', error);
+    }
+
+    _onIceCandidate = (candidate: RTCIceCandidate) => {
+        if (!this.remoteUser) return;
+        this.sendMessage({
+            type: 'webrtc.icecandidate',
+            data: {
+                remoteUser: this.remoteUser,
+                candidate,
+            }
+        });
+    }
+
+    addMessageListener = (listener: (message: { type: string; data: any }) => void) => {
+        if (this.messageListener.indexOf(listener) === -1) {
+            this.messageListener.push(listener);
+        }
+    }
+
+    removeMessageListener = (listener: (message: { type: string; data: any }) => void) => {
+        const index = this.messageListener.indexOf(listener);
+        if (index !== -1) {
+            this.messageListener.splice(index, 1);
+        }
+    }
+
+    sendMessage = ({ type = '', data }: { type?: string; data?: any } = {}) => {
+        if (this.wsClient.readyState === this.wsClient.OPEN) {
+            const message = {
+                type,
+                data,
+            };
+            this.wsClient.send(JSON.stringify(message));
+        }
+    }
+
+    call = async (receiver: string) => {
+        const offer = await this.webrtcController.makeCall();
+        this.remoteUser = receiver;
+        this.sendMessage({
+            type: 'webrtc.offer',
+            data: {
+                receiver,
+                offer: offer,
+            }
+        });
     }
 }
-
-export function addMessageListener(listener: (data: any) => void) {
-    messageListener.push(listener);
-}
-
-export function removeMessageListener(listener: any) {
-    const index = messageListener.indexOf(listener);
-    if (index !== -1) {
-        messageListener.splice(index, 1);
-    }
-}
-
-export default client;
