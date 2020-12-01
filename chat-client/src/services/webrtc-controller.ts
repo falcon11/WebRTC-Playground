@@ -37,6 +37,7 @@ class WebrtcController {
   }
 
   _onTrack = (ev: RTCTrackEvent) => {
+    console.log('on receive track', ev.track);
     this.remoteMediaStream.addTrack(ev.track);
   };
 
@@ -58,37 +59,9 @@ class WebrtcController {
     }
   };
 
-  makeCall = async () => {
-    this.localMediaStream = await getUserMedia(constraints);
-    this.localMediaStream.getTracks().forEach(track => {
-      this.peerConnection.addTrack(track, this.localMediaStream!);
-    });
-    const offer = await this.peerConnection.createOffer();
-    await this.peerConnection.setLocalDescription(offer);
-    return offer;
-  };
-
-  handleReceiveOffer = async (offer: any) => {
-    console.log('receive offer', offer);
-    this.localMediaStream = await getUserMedia(constraints);
-    this.localMediaStream.getTracks().forEach(track => {
-      this.peerConnection.addTrack(track, this.localMediaStream!);
-    });
-    await this.peerConnection.setRemoteDescription(
-      new RTCSessionDescription(offer),
-    );
-    const answer = await this.peerConnection.createAnswer();
-    await this.peerConnection.setLocalDescription(answer);
-    return answer;
-  };
-
-  handleReceiveAnswer = async (answer: any) => {
-    console.log('receive answer', answer);
-    await this.peerConnection.setRemoteDescription(
-      new RTCSessionDescription(answer),
-    );
+  _flushCandidateArray = async () => {
     if (this.candidateArray.length > 0) {
-      console.log('receive answer and add candidate');
+      console.log('flush candidate');
       for (let i = 0; i < this.candidateArray.length; i += 1) {
         const candidate = this.candidateArray[i];
         try {
@@ -103,8 +76,47 @@ class WebrtcController {
     }
   };
 
+  makeCall = async () => {
+    this.localMediaStream = await getUserMedia(constraints);
+    this.localMediaStream.getTracks().forEach(track => {
+      this.peerConnection.addTrack(track, this.localMediaStream!);
+    });
+    const offer = await this.peerConnection.createOffer();
+    await this.peerConnection.setLocalDescription(offer);
+    return offer;
+  };
+
+  handleReceiveOffer = async (offer: any) => {
+    console.log('receive offer', offer);
+    // console.log('start create answer', new Date().getTime());
+    this.localMediaStream = await getUserMedia(constraints);
+    this.localMediaStream.getTracks().forEach(track => {
+      this.peerConnection.addTrack(track, this.localMediaStream!);
+    });
+    // console.log('end create answer', new Date().getTime());
+    await this.peerConnection.setRemoteDescription(
+      new RTCSessionDescription(offer),
+    );
+    const answer = await this.peerConnection.createAnswer();
+    await this.peerConnection.setLocalDescription(answer);
+    await this._flushCandidateArray();
+    return answer;
+  };
+
+  handleReceiveAnswer = async (answer: any) => {
+    console.log('receive answer', answer);
+    await this.peerConnection.setRemoteDescription(
+      new RTCSessionDescription(answer),
+    );
+    await this._flushCandidateArray();
+  };
+
   handleReceiveCandidate = async (candidate: any) => {
-    console.log('receive candidate', candidate);
+    console.log(
+      'receive candidate',
+      candidate,
+      this.peerConnection.remoteDescription,
+    );
     if (!this.peerConnection.remoteDescription) {
       this.candidateArray.push(candidate);
       return;

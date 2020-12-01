@@ -43,6 +43,11 @@ export default () => {
     localVideoRef.current &&
       (localVideoRef.current!.srcObject =
         chatClient?.webrtcController.localMediaStream || null);
+    chatClient?.webrtcController.remoteMediaStream
+      .getTracks()
+      .forEach(track => {
+        chatClient?.webrtcController.remoteMediaStream.removeTrack(track);
+      });
     remoteVideoRef.current &&
       (remoteVideoRef.current.srcObject =
         chatClient?.webrtcController.remoteMediaStream || null);
@@ -81,7 +86,7 @@ export default () => {
         <div className={styles.userList}>
           {userList.map(user => {
             return (
-              <div>
+              <div key={user}>
                 <span>{user}</span>
               </div>
             );
