@@ -7,6 +7,7 @@ export default () => {
   const [remoteUser, setRemoteUser] = useState('');
   const [chatClient, setChatClient] = useState<ChatClient>();
   const [isLogin, setIsLogin] = useState(chatClient?.isLogin);
+  const [userList, setUserList] = useState<string[]>([]);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -30,6 +31,7 @@ export default () => {
     chatClient.onLogin = () => {
       setIsLogin(true);
     };
+    chatClient.onReceiveUserList = userList => setUserList(userList);
   }, [chatClient]);
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -75,19 +77,30 @@ export default () => {
         </label>
         <input type="submit" value="Call" />
       </form>
-      <div>
-        <video
-          ref={localVideoRef}
-          className={styles.player}
-          autoPlay
-          playsInline
-        ></video>
-        <video
-          ref={remoteVideoRef}
-          className={styles.player}
-          autoPlay
-          playsInline
-        ></video>
+      <div className={styles.horizontalContainer}>
+        <div className={styles.userList}>
+          {userList.map(user => {
+            return (
+              <div>
+                <span>{user}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className={styles.playerContainer}>
+          <video
+            ref={localVideoRef}
+            className={styles.localPlayer}
+            autoPlay
+            playsInline
+          ></video>
+          <video
+            ref={remoteVideoRef}
+            className={styles.remotePlayer}
+            autoPlay
+            playsInline
+          ></video>
+        </div>
       </div>
     </div>
   );

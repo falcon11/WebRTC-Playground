@@ -5,6 +5,7 @@ const MessageTypes = {
     webrtcAnswer: 'webrtc.answer',
     webrtcIcecandidate: 'webrtc.icecandidate',
     success: 'success',
+    userList: 'userList',
 }
 
 // export default MessageTypes;

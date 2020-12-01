@@ -12,8 +12,10 @@ export default class ChatClient {
   messageListener: any[] = [];
   remoteUser?: string;
   isLogin: boolean = false;
+  userList: string[] = [];
   onReceiveCall?: (username: string, accept: () => Promise<any>) => void;
   onLogin?: (msg: any) => void;
+  onReceiveUserList?: (userList: string[]) => void;
 
   constructor() {
     this._initWSClient();
@@ -104,6 +106,11 @@ export default class ChatClient {
     await this.webrtcController.handleReceiveCandidate(data.candidate);
   };
 
+  _handleReceiveUserList = ({ userList = [] }) => {
+    this.userList = userList;
+    this.onReceiveUserList?.(userList);
+  };
+
   _handleOnMessage = ({ type = '', data }: { type: string; data: any }) => {
     switch (type) {
       case 'webrtc.offer':
@@ -117,6 +124,10 @@ export default class ChatClient {
         break;
       case 'success':
         this._handleSuccessMessage(data);
+        break;
+      case 'userList':
+        this._handleReceiveUserList(data);
+        break;
       default:
         break;
     }

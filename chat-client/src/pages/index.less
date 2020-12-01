@@ -2,15 +2,6 @@
   background: rgb(121, 242, 157);
 }
 
-.player {
-  float: left;
-  width: 480px;
-  height: 360px;
-  margin-top: 20px;
-  margin-left: 20px;
-  background-color: black;
-}
-
 form {
   margin-bottom: 10px;
 }
@@ -21,4 +12,33 @@ form {
 
 .loginStatusYes {
   color: green;
+}
+
+.horizontalContainer {
+  display: flex;
+  flex-direction: row;
+}
+
+.userList {
+  margin-left: 20px;
+  width: 200px;
+  border: 1px solid black;
+}
+
+.playerContainer {
+  margin-left: 10px;
+  position: relative;
+}
+
+.localPlayer {
+  position: absolute;
+  border: 1px solid black;
+  width: 120px;
+  height: 90px;
+}
+
+.remotePlayer {
+  border: 1px solid black;
+  width: 480px;
+  height: 360px;
 }
