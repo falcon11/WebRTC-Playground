@@ -28,6 +28,11 @@ export default () => {
             chatClient?.webrtcController.remoteMediaStream || null);
       }
     };
+    chatClient.onReceiveAnswer = () => {
+      remoteVideoRef.current &&
+        (remoteVideoRef.current.srcObject =
+          chatClient?.webrtcController.remoteMediaStream || null);
+    };
     chatClient.onLogin = () => {
       setIsLogin(true);
     };
@@ -43,14 +48,6 @@ export default () => {
     localVideoRef.current &&
       (localVideoRef.current!.srcObject =
         chatClient?.webrtcController.localMediaStream || null);
-    chatClient?.webrtcController.remoteMediaStream
-      .getTracks()
-      .forEach(track => {
-        chatClient?.webrtcController.remoteMediaStream.removeTrack(track);
-      });
-    remoteVideoRef.current &&
-      (remoteVideoRef.current.srcObject =
-        chatClient?.webrtcController.remoteMediaStream || null);
   };
   return (
     <div>

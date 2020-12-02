@@ -81,6 +81,7 @@ class WebrtcController {
     this.localMediaStream.getTracks().forEach(track => {
       this.peerConnection.addTrack(track, this.localMediaStream!);
     });
+    this.remoteMediaStream = new MediaStream();
     const offer = await this.peerConnection.createOffer();
     await this.peerConnection.setLocalDescription(offer);
     return offer;
@@ -93,6 +94,7 @@ class WebrtcController {
     this.localMediaStream.getTracks().forEach(track => {
       this.peerConnection.addTrack(track, this.localMediaStream!);
     });
+    this.remoteMediaStream = new MediaStream();
     // console.log('end create answer', new Date().getTime());
     await this.peerConnection.setRemoteDescription(
       new RTCSessionDescription(offer),

@@ -14,6 +14,7 @@ export default class ChatClient {
   isLogin: boolean = false;
   userList: string[] = [];
   onReceiveCall?: (username: string, accept: () => Promise<any>) => void;
+  onReceiveAnswer?: () => void;
   onLogin?: (msg: any) => void;
   onReceiveUserList?: (userList: string[]) => void;
 
@@ -97,6 +98,7 @@ export default class ChatClient {
     answer: any;
   }) => {
     await this.webrtcController.handleReceiveAnswer(data.answer);
+    this.onReceiveAnswer?.();
   };
 
   _handleReceiveWebrtcIceCandidate = async (data: {
