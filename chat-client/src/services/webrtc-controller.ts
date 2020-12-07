@@ -13,7 +13,7 @@ const constraints: MediaStreamConstraints = {
   audio: true,
 };
 
-function getUserMedia(
+export function getUserMedia(
   constraints: MediaStreamConstraints,
 ): Promise<MediaStream> {
   return navigator.mediaDevices.getUserMedia(constraints);
